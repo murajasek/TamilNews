@@ -1,0 +1,6 @@
+RewriteEngine On
+
+# Let existing files be served normally; route other requests to the PHP entrypoint.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [L]

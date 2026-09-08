@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Deployment bundles
+release/
+godaddy-release/
+*.zip
+
+# TypeScript cache
+*.tsbuildinfo
+
+# Environment files
+.env
+.env*.local
+
+# macOS
+.DS_Store
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*

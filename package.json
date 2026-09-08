@@ -1,0 +1,49 @@
+{
+  "name": "tamil-news-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A modern web application to display Tamil news",
+  "scripts": {
+    "dev": "next dev",
+    "web:dev": "next dev",
+    "build": "next build",
+    "web:build": "next build",
+    "start": "next start",
+    "web:start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "cap:build": "npm run build && npx cap copy",
+    "cap:sync": "npx cap sync",
+    "cap:add:android": "npx cap add android",
+    "cap:add:ios": "npx cap add ios",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "cap:run:ios:local": "CAP_SERVER_URL=http://localhost:3000 npx cap run ios",
+    "cap:run:android:local": "CAP_SERVER_URL=http://10.0.2.2:3000 npx cap run android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.4.2",
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
+    "classnames": "^2.3.2",
+    "fast-xml-parser": "^5.8.0",
+    "next": "^14.0.0",
+    "next-themes": "^0.2.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "swr": "^2.2.0",
+    "zustand": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "autoprefixer": "^10.4.0",
+    "eslint": "^8.50.0",
+    "eslint-config-next": "^14.0.0",
+    "postcss": "^8.4.0",
+    "tailwindcss": "^3.3.0",
+    "typescript": "^5.3.0"
+  }
+}
