@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import type { NewsStory, SourceStatus } from '@/lib/news'
 
@@ -24,13 +24,29 @@ export default function Home() {
   const [activeCategory, setActiveCategory] = useState('அனைத்தும்')
   const [query, setQuery] = useState('')
   const [selectedStory, setSelectedStory] = useState<NewsStory | null>(null)
+  const [currentDateTime, setCurrentDateTime] = useState('')
   const { data, error, isLoading } = useSWR('/api/news', fetcher, { refreshInterval: 300000, revalidateOnFocus: false })
   const articleUrl = selectedStory ? `/api/article?url=${encodeURIComponent(selectedStory.url)}` : null
   const { data: article, error: articleError, isLoading: articleLoading } = useSWR(articleUrl, articleFetcher)
   const articleParagraphs = article?.paragraphs ?? []
   const hasArticleParagraphs = articleParagraphs.length > 0
-  const today = new Intl.DateTimeFormat('ta-IN', { day: '2-digit', month: 'long', year: 'numeric' }).format(new Date())
   const tickerHeadline = data?.stories[0]?.title ?? 'புதிய செய்திகளை உங்களுக்காகத் தொகுத்து வழங்குகிறோம்'
+  useEffect(() => {
+    const formatter = new Intl.DateTimeFormat('ta-IN', {
+      weekday: 'long',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    })
+    const updateDateTime = () => setCurrentDateTime(formatter.format(new Date()))
+
+    updateDateTime()
+    const timer = window.setInterval(updateDateTime, 1000)
+    return () => window.clearInterval(timer)
+  }, [])
   const filteredStories = useMemo(() => (data?.stories ?? []).filter((story) => {
     const matchesCategory = activeCategory === 'அனைத்தும்' || story.category === activeCategory
     const searchText = `${story.title} ${story.summary} ${story.source}`.toLowerCase()
@@ -40,8 +56,8 @@ export default function Home() {
     
     <div className="news-shell">
       <div className="utility-bar">
-                <span>வியாழன், 03 செப்டம்பர் 2026 · சென்னை பதிவு</span
-                ><span>தமிழ்நாடு 31°C · உலகச் செய்திகளை தமிழில் வாசியுங்கள்</span>
+            <span>{currentDateTime || 'தேதி மற்றும் நேரம் ஏற்றப்படுகிறது...'} · சென்னை பதிவு</span
+            ><span>தமிழ்நாடு 31°C · உலகச் செய்திகளை தமிழில் வாசியுங்கள்</span>
             </div>
       <header className="header">
         <img className="brand-logo" src="/arathamizh-logo.webp" alt="அறத்தமிழ் செய்தித்தளம்" />
