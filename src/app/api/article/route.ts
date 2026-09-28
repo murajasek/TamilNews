@@ -9,6 +9,7 @@ const allowedHosts = new Set([
   'www.maalaimalar.com',
   'www.puthiyathalaimurai.com',
   'tamil.news18.com',
+  'www.dinamalar.com',
 ])
 
 const decode = (value: string) => value
