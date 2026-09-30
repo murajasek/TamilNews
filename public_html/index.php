@@ -1,3 +1,9 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="google-site-verification" content="nEUnqURGLRfZNMNwssgkPv4Tsi6l2LyWJmIqHNg-iIs" />
+</head>
+<body>
 <?php
 // Set NEXT_APP_URL in cPanel, or replace this value with the public URL of the Node app.
 $nextAppUrl = getenv('NEXT_APP_URL') ?: 'https://arathamizh.example.com';
@@ -16,3 +22,7 @@ $target = rtrim($nextAppUrl, '/') . $requestPath . $query;
 header('Cache-Control: no-store');
 header('Location: ' . $target, true, 302);
 exit;
+?>
+
+</body>
+</html>
