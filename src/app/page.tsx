@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import type { NewsStory, SourceStatus } from '@/lib/news'
+import Link from 'next/link'
 
 type NewsResponse = { stories: NewsStory[]; sources: SourceStatus[]; fetchedAt: string }
 type ArticleResponse = { title: string; description: string; briefContent: string; briefParagraphCount?: number; paragraphs: string[]; url: string; source?: string; error?: string }
@@ -96,7 +97,7 @@ export default function Home() {
                 <section><h2>பிரிவுகள்</h2><nav className="footer-sections" aria-label="அடிக்குறிப்பு பிரிவுகள்"><span>தமிழ்நாடு</span><span>இந்தியா</span><span>உலகம்</span><span>அரசியல்</span><span>சினிமா</span><span>விளையாட்டு</span></nav></section>
                 <section><h2>வெளிப்படைத்தன்மை</h2><nav className="footer-links" aria-label="கொள்கை வழிசெலுத்தல்"><span>செய்தி மூலங்கள்</span><span>ஆதாரக் கொள்கை</span><span>எங்களைப் பற்றி</span></nav></section>
         </div>
-        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span></div>
+        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span><Link href="http://127.0.0.1:8765/">Market Link</Link></div>
 </footer>
     </div>
   )
