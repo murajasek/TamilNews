@@ -276,6 +276,53 @@ button {
     font-weight: 800;
 }
 
+.ticker {
+    min-width: 0;
+    max-width: min(900px, 72vw);
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.ticker-track {
+    display: flex;
+    width: max-content;
+    animation: ticker-scroll 60s linear infinite;
+}
+
+.ticker:hover .ticker-track,
+.ticker:focus-within .ticker-track {
+    animation-play-state: paused;
+}
+
+.ticker-item {
+    padding: 0 28px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    white-space: nowrap;
+    font-family: 'Noto Sans Tamil', sans-serif;
+    font-size: 1rem;
+}
+
+.ticker-item::before {
+    content: '•';
+    margin-right: 28px;
+    color: var(--red);
+}
+
+.ticker-item:hover {
+    text-decoration: underline;
+}
+
+@keyframes ticker-scroll {
+    to { transform: translateX(-50%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .ticker { overflow-x: auto; }
+    .ticker-track { animation: none; }
+}
+
 .breaking-news p {
     min-width: 0;
     max-width: min(900px, 72vw);
@@ -784,6 +831,18 @@ button {
     padding-top: 28px;
     color: rgba(255, 255, 255, .58);
     font-size: .88rem
+}
+
+.portfoliup-link {
+    color: #f8f5ef;
+    font-weight: 800;
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid var(--red)
+}
+
+.portfoliup-link:hover {
+    color: var(--red)
 }
 
 @media(max-width:850px) {

@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import useSWR from 'swr'
 import type { NewsStory, SourceStatus } from '@/lib/news'
-import Link from 'next/link'
 
 type NewsResponse = { stories: NewsStory[]; sources: SourceStatus[]; fetchedAt: string }
 type ArticleResponse = { title: string; description: string; briefContent: string; briefParagraphCount?: number; paragraphs: string[]; url: string; source?: string; error?: string }
@@ -19,6 +18,7 @@ const articleFetcher = async (url: string) => {
   if (!response.ok) throw new Error(payload.error || 'Article unavailable')
   return payload
 }
+const portfoliUpUrl = process.env.NEXT_PUBLIC_PORTFOLIUP_URL || 'http://127.0.0.1:8765/'
 const categories = ['அனைத்தும்', 'தமிழ்நாடு', 'இந்தியா', 'உலகம்', 'அரசியல்', 'சினிமா', 'விளையாட்டு', 'வர்த்தகம்']
 
 export default function Home() {
@@ -31,7 +31,7 @@ export default function Home() {
   const { data: article, error: articleError, isLoading: articleLoading } = useSWR(articleUrl, articleFetcher)
   const articleParagraphs = article?.paragraphs ?? []
   const hasArticleParagraphs = articleParagraphs.length > 0
-  const tickerHeadline = data?.stories[0]?.title ?? 'புதிய செய்திகளை உங்களுக்காகத் தொகுத்து வழங்குகிறோம்'
+  const tickerStories = data?.stories.slice(0, 10) ?? []
   useEffect(() => {
     const formatter = new Intl.DateTimeFormat('ta-IN', {
       weekday: 'long',
@@ -72,7 +72,9 @@ export default function Home() {
 
       <nav className="categories" aria-label="செய்தி வகைகள்">{categories.map((category) => <button className={`category ${activeCategory === category ? 'active' : ''}`} key={category} onClick={() => setActiveCategory(category)}>{category === 'அனைத்தும்' ? 'முகப்பு' : category}</button>)}</nav>
 
-      <div className="breaking-news"><span className="breaking-label">நேரலை</span><p>{tickerHeadline}</p></div>
+      <div className="breaking-news"><span className="breaking-label">நேரலை</span>
+        <div className="ticker">{tickerStories.length ? <div className="ticker-track">{[...tickerStories, ...tickerStories].map((story, index) => <button className="ticker-item" key={`${story.id}-${index}`} aria-hidden={index >= tickerStories.length} tabIndex={index >= tickerStories.length ? -1 : 0} onClick={() => setSelectedStory(story)}>{story.title}</button>)}</div> : <p>புதிய செய்திகளை உங்களுக்காகத் தொகுத்து வழங்குகிறோம்</p>}</div>
+      </div>
 
       <main className="main">
         <aside className="ad-rail" aria-label="விளம்பரம்">
@@ -97,7 +99,7 @@ export default function Home() {
                 <section><h2>பிரிவுகள்</h2><nav className="footer-sections" aria-label="அடிக்குறிப்பு பிரிவுகள்"><span>தமிழ்நாடு</span><span>இந்தியா</span><span>உலகம்</span><span>அரசியல்</span><span>சினிமா</span><span>விளையாட்டு</span></nav></section>
                 <section><h2>வெளிப்படைத்தன்மை</h2><nav className="footer-links" aria-label="கொள்கை வழிசெலுத்தல்"><span>செய்தி மூலங்கள்</span><span>ஆதாரக் கொள்கை</span><span>எங்களைப் பற்றி</span></nav></section>
         </div>
-        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span><Link href="http://127.0.0.1:8765/">Market Link</Link></div>
+        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span><a className="portfoliup-link" href={portfoliUpUrl} target="_blank" rel="noopener noreferrer">PortfoliUp →</a></div>
 </footer>
     </div>
   )
