@@ -272,8 +272,8 @@ button {
     padding: 7px 14px 8px;
     border-radius: 6px;
     background: var(--red);
-    font-size: .9rem;
-    font-weight: 800;
+    font-size: .6rem;
+    font-weight: 600;
 }
 
 .ticker {
@@ -301,7 +301,7 @@ button {
     color: inherit;
     white-space: nowrap;
     font-family: 'Noto Sans Tamil', sans-serif;
-    font-size: 1rem;
+    font-size: .85rem;
 }
 
 .ticker-item::before {
