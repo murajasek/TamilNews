@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Share Market · Indian Market Uptrend Scanner</title>
+<style>
+  :root {
+    --bg: #0d1420; --panel: #151d2e; --line: #243149;
+    --text: #e8edf7; --muted: #8fa0bd; --accent: #4da3ff;
+    --up: #2ecc71; --down: #ff6b6b; --warn: #ffb020; --bse: #c58bff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Segoe UI", system-ui, sans-serif; font-size: 14px;
+  }
+  header {
+    padding: 18px 26px; border-bottom: 1px solid var(--line);
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    background: var(--panel);
+  }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .3px; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .spacer { flex: 1; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 5px 12px; border-radius: 999px;
+    background: #1d2740; border: 1px solid var(--line); font-size: 12px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .dot.ok { background: var(--up); }
+  .dot.running { background: var(--warn); animation: pulse 1s infinite; }
+  .dot.error { background: var(--down); }
+  @keyframes pulse { 50% { opacity: .25; } }
+  button {
+    background: var(--accent); color: #04121f; border: 0; border-radius: 6px;
+    padding: 8px 16px; font-weight: 600; cursor: pointer; font-size: 13px;
+  }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  main { padding: 22px 26px; }
+  .cards { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 20px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 14px 18px; min-width: 145px;
+  }
+  .card .label { color: var(--muted); font-size: 11px; text-transform: uppercase;
+                 letter-spacing: .6px; }
+  .card .value { font-size: 22px; font-weight: 600; margin-top: 5px; }
+  .panel {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px 18px; margin-bottom: 20px;
+  }
+  .panel h2 { font-size: 14px; margin: 0 0 4px; font-weight: 600; }
+  .panel .hint { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 11px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; cursor: pointer;
+                 color: var(--muted); }
+  .legend i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
+  .legend .off { opacity: .35; text-decoration: line-through; }
+  .chart-controls { display: flex; gap: 6px; margin: 8px 0 10px; flex-wrap: wrap; }
+  .chart-controls button { padding: 5px 11px; font-size: 11px; background: #1d2740;
+                           color: var(--muted); border: 1px solid var(--line); }
+  .chart-controls button.active { background: var(--accent); color: #04121f; border-color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .spark-head { text-align: center !important; }
+  .spark-cell { min-width: 128px; padding: 7px 8px !important; text-align: center !important; }
+  .spark { display: inline-block; width: 112px; height: 30px; vertical-align: middle; }
+  .spark-cell { cursor: pointer; }
+  .spark-cell:hover { background: #1e2c47; }
+  th, td { padding: 11px 14px; text-align: right; border-bottom: 1px solid var(--line); }
+  th:nth-child(-n+4), td:nth-child(-n+4) { text-align: left; }
+  th { background: #1a2338; font-size: 12px; color: var(--muted);
+       text-transform: uppercase; letter-spacing: .5px; cursor: pointer;
+       user-select: none; white-space: nowrap; }
+  th:hover { color: var(--text); }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: #1a2437; }
+  tbody tr.sel { background: #1e2c47; }
+  td.pos { color: var(--up); } td.neg { color: var(--down); }
+  .rank { color: var(--muted); }
+  .tag { font-size: 10px; padding: 2px 7px; border-radius: 4px; font-weight: 600;
+         background: #1c3355; color: #7fc0ff; }
+  .tag.bse { background: #33245a; color: var(--bse); }
+  .empty, .err {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+    padding: 34px; text-align: center; color: var(--muted);
+  }
+  .err { border-color: var(--down); color: var(--down); }
+  .rej { margin-top: 16px; color: var(--muted); font-size: 12px; }
+  .rej span { display: inline-block; margin-right: 14px; }
+  .charts { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .charts { grid-template-columns: 1fr; } }
+  svg text { font-size: 10px; fill: var(--muted); }
+  .grid { stroke: #223050; stroke-width: 1; }
+  .axis { stroke: #35486d; stroke-width: 1; }
+  footer { padding: 14px 26px; color: var(--muted); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Share Market · Top 10 Consistent Monthly Gainers</h1>
+    <div class="sub">{{ universe }} &middot; positive returns in each of the last {{ months }} months</div>
+  </div>
+  <div class="spacer"></div>
+  <div class="pill"><span class="dot" id="dot"></span><span id="status">connecting&hellip;</span></div>
+  <div class="pill">live refresh <strong>{{ live_interval_seconds | int }} sec</strong></div>
+  <button id="refresh">Rescan market</button>
+</header>
+
+<main>
+  <div class="cards">
+    <div class="card"><div class="label">Companies</div><div class="value" id="m-count">&mdash;</div></div>
+    <div class="card"><div class="label">By Exchange</div><div class="value" id="m-exch" style="font-size:15px">&mdash;</div></div>
+    <div class="card"><div class="label">Period Return</div><div class="value" id="m-ret">&mdash;</div></div>
+    <div class="card"><div class="label">Median Max DD</div><div class="value" id="m-dd">&mdash;</div></div>
+    <div class="card"><div class="label">Analyzed</div><div class="value" id="m-uni">&mdash;</div></div>
+    <div class="card"><div class="label">Live Updated</div><div class="value" id="m-time" style="font-size:15px">&mdash;</div></div>
+  </div>
+
+  <div id="error" class="err" style="display:none"></div>
+
+  <div id="tablewrap"></div>
+
+  <div id="detailpanel" class="charts" style="display:none">
+    <div class="panel">
+      <h2 id="d-title">&mdash;</h2>
+      <div class="hint">Daily close with 20 / 50 / 100-day SMA overlays.
+        Use the overlays to assess the selected stock's current trend strength.</div>
+      <div id="pricechart"></div>
+      <div class="legend">
+        <span><i style="background:#4da3ff"></i>Close</span>
+        <span><i style="background:#2ecc71"></i>SMA 20</span>
+        <span><i style="background:#ffb020"></i>SMA 50</span>
+        <span><i style="background:#ff6b6b"></i>SMA 100</span>
+      </div>
+    </div>
+    <div class="panel">
+      <h2>Monthly returns</h2>
+      <div class="hint">Each of the last {{ months }} months must close green
+        for the stock to qualify.</div>
+      <div id="barchart"></div>
+    </div>
+  </div>
+
+  <div id="trendpanel" class="panel" style="display:none">
+    <h2>Comparative trend &mdash; rebased to 100</h2>
+    <div class="hint">Click a row trend graph to switch this chart to hourly, weekly,
+      or monthly points. Click a legend entry to toggle a stock.</div>
+    <div class="chart-controls" id="trendcontrols">
+      <button data-period="hour" class="active">Hourly</button>
+      <button data-period="week">Weekly</button>
+      <button data-period="month">Monthly</button>
+    </div>
+    <div id="cmpchart"></div>
+    <div class="legend" id="cmplegend"></div>
+  </div>
+  <div class="rej" id="rej"></div>
+</main>
+
+<footer>
+  Prices and Today Gain/Loss auto-refresh every {{ live_interval_seconds | int }} seconds. The full market
+  selection refreshes every {{ interval_minutes }} minute(s). Data via yfinance &middot;
+  informational use only, not investment advice.
+</footer>
+
+<script>
+const POLL_MS = 30000;
+const SERIES_COLORS = ["#4da3ff","#2ecc71","#ffb020","#ff6b6b","#c58bff","#40e0d0",
+                       "#ff9f43","#7bed9f","#f78fb3","#70a1ff"];
+let sortKey = "6M Return %", sortDesc = true, latest = null;
+let selected = null, hidden = new Set(), trendPeriod = "hour";
+
+const numeric = c => !["Ticker", "Company", "Exchange", "Today Status"].includes(c);
+const fmt = (c, v) => {
+  if (v === null || v === undefined) return "\u2014";
+  if (!numeric(c)) return v;
+  return c.includes("%") ? v.toFixed(2) + "%" : v.toLocaleString("en-IN",
+    { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
+const esc = s => String(s).replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+/* ---------- tiny SVG chart helpers (no external chart library) ---------- */
+function svgEl(w, h) {
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h +
+         '" preserveAspectRatio="none" style="display:block">';
+}
+function scaler(min, max, lo, hi) {
+  const span = (max - min) || 1;
+  return v => hi - ((v - min) / span) * (hi - lo);
+}
+function pathFrom(vals, xs, y) {
+  let d = "", pen = false;
+  vals.forEach((v, i) => {
+    if (v === null) { pen = false; return; }
+    d += (pen ? "L" : "M") + xs(i).toFixed(1) + " " + y(v).toFixed(1) + " ";
+    pen = true;
+  });
+  return d.trim();
+}
+
+function lineChart(target, series, opts) {
+  const W = 900, H = opts.height || 260, P = { l: 46, r: 12, t: 12, b: 22 };
+  const shown = series.filter(s => s.values.some(v => v !== null));
+  if (!shown.length) { document.getElementById(target).innerHTML = ""; return; }
+  const flat = shown.flatMap(s => s.values).filter(v => v !== null);
+  let min = Math.min.apply(null, flat), max = Math.max.apply(null, flat);
+  const pad = (max - min) * 0.06 || 1; min -= pad; max += pad;
+  const n = shown[0].values.length;
+  const xs = i => P.l + (i / Math.max(1, n - 1)) * (W - P.l - P.r);
+  const y = scaler(min, max, P.t, H - P.b);
+
+  let s = svgEl(W, H);
+  for (let g = 0; g <= 4; g++) {
+    const val = min + (max - min) * g / 4, yy = y(val);
+    s += '<line class="grid" x1="' + P.l + '" x2="' + (W - P.r) +
+         '" y1="' + yy + '" y2="' + yy + '"/>';
+    s += '<text x="4" y="' + (yy + 3) + '">' +
+         val.toFixed(opts.decimals === undefined ? 0 : opts.decimals) + '</text>';
+  }
+  s += '<line class="axis" x1="' + P.l + '" x2="' + (W - P.r) +
+       '" y1="' + (H - P.b) + '" y2="' + (H - P.b) + '"/>';
+  const labels = opts.labels || [];
+  [0, Math.floor(n / 2), n - 1].forEach(i => {
+    if (labels[i]) s += '<text x="' + xs(i) + '" y="' + (H - 6) +
+                        '" text-anchor="middle">' + esc(labels[i]) + '</text>';
+  });
+  shown.forEach(sr => {
+    s += '<path d="' + pathFrom(sr.values, xs, y) + '" fill="none" stroke="' +
+         sr.color + '" stroke-width="' + (sr.width || 1.6) +
+         '" stroke-linejoin="round"/>';
+  });
+  document.getElementById(target).innerHTML = s + "</svg>";
+}
+
+function barChart(target, labels, values) {
+  const W = 380, H = 240, P = { l: 40, r: 10, t: 12, b: 40 };
+  if (!values.length) { document.getElementById(target).innerHTML = ""; return; }
+  const max = Math.max.apply(null, values.concat([0]));
+  const min = Math.min.apply(null, values.concat([0]));
+  const pad = (max - min) * 0.15 || 1;
+  const y = scaler(min - pad, max + pad, P.t, H - P.b);
+  const bw = (W - P.l - P.r) / values.length;
+  let s = svgEl(W, H);
+  s += '<line class="axis" x1="' + P.l + '" x2="' + (W - P.r) +
+       '" y1="' + y(0) + '" y2="' + y(0) + '"/>';
+  values.forEach((v, i) => {
+    const x = P.l + i * bw + bw * 0.18, w = bw * 0.64;
+    const top = Math.min(y(v), y(0)), h = Math.max(1.5, Math.abs(y(v) - y(0)));
+    s += '<rect x="' + x + '" y="' + top + '" width="' + w + '" height="' + h +
+         '" rx="2" fill="' + (v >= 0 ? "#2ecc71" : "#ff6b6b") + '"/>';
+    s += '<text x="' + (x + w / 2) + '" y="' + (top - 4) +
+         '" text-anchor="middle">' + v.toFixed(1) + '</text>';
+    s += '<text x="' + (x + w / 2) + '" y="' + (H - 22) +
+         '" text-anchor="middle" transform="rotate(-40 ' + (x + w / 2) + ' ' +
+         (H - 22) + ')">' + esc(labels[i] || "") + '</text>';
+  });
+  document.getElementById(target).innerHTML = s + "</svg>";
+}
+
+/* ---------- chart wiring ---------- */
+function aggregateTrend(trend, period, livePrice) {
+  if (period === "hour") {
+    const hourly = trend.hourly || {};
+    return { dates: hourly.dates || [], values: hourly.close || [] };
+  }
+  const dates = trend.dates || [], closes = (trend.close || []).slice();
+  if (livePrice !== null && livePrice !== undefined && closes.length) closes[closes.length - 1] = livePrice;
+  if (period === "date") return { dates, values: closes };
+  const buckets = [], seen = new Map();
+  dates.forEach((date, i) => {
+    const d = new Date(date + "T00:00:00");
+    let key, label;
+    if (period === "week") {
+      const monday = new Date(d);
+      monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+      key = monday.toISOString().slice(0, 10);
+      label = "Wk " + key;
+    } else {
+      key = date.slice(0, 7);
+      label = new Date(date + "T00:00:00").toLocaleDateString("en-IN",
+        { month: "short", year: "numeric" });
+    }
+    if (!seen.has(key)) { seen.set(key, buckets.length); buckets.push({ label, value: closes[i] }); }
+    else buckets[seen.get(key)].value = closes[i];
+  });
+  return { dates: buckets.map(b => b.label), values: buckets.map(b => b.value) };
+}
+
+function sparkline(values, color) {
+  const clean = values.filter(v => v !== null && Number.isFinite(v));
+  if (clean.length < 2) return '<span class="muted">&mdash;</span>';
+  const min = Math.min.apply(null, clean), max = Math.max.apply(null, clean);
+  const span = (max - min) || 1, width = 112, height = 30, pad = 2;
+  const points = values.map((value, index) => {
+    if (value === null || !Number.isFinite(value)) return null;
+    const x = pad + index / Math.max(1, values.length - 1) * (width - pad * 2);
+    const y = height - pad - ((value - min) / span) * (height - pad * 2);
+    return x.toFixed(1) + "," + y.toFixed(1);
+  }).filter(Boolean).join(" ");
+  return '<svg class="spark" viewBox="0 0 ' + width + ' ' + height +
+    '" aria-label="trend sparkline"><polyline points="' + points +
+    '" fill="none" stroke="' + color + '" stroke-width="1.8" stroke-linecap="round"' +
+    ' stroke-linejoin="round"/></svg>';
+}
+
+function rowSparkline(row, period, color) {
+  const trend = row.Trend || {};
+  if (period === "hour") {
+    return sparkline((trend.hourly && trend.hourly.close) || [], color);
+  }
+  const points = aggregateTrend(trend, period, row.Price);
+  return sparkline(points.values || [], color);
+}
+
+function drawComparative(rows) {
+  const panel = document.getElementById("trendpanel");
+  const withTrend = rows.filter(r => r.Trend && r.Trend.close);
+  if (!withTrend.length) { panel.style.display = "none"; return; }
+  panel.style.display = "block";
+
+  const series = withTrend.map((r, i) => ({
+    name: r.Ticker, color: SERIES_COLORS[i % SERIES_COLORS.length],
+    values: (() => {
+      const points = aggregateTrend(r.Trend, trendPeriod, r.Price);
+      const first = points.values.find(v => v !== null && v > 0) || 1;
+      return hidden.has(r.Ticker) ? points.values.map(() => null) :
+        points.values.map(v => v === null ? null : v / first * 100);
+    })(),
+  }));
+  const points = aggregateTrend(withTrend[0].Trend, trendPeriod, withTrend[0].Price);
+  lineChart("cmpchart", series,
+    { labels: points.dates, decimals: 0, height: 280 });
+
+  document.getElementById("cmplegend").innerHTML = withTrend.map((r, i) =>
+    '<span class="' + (hidden.has(r.Ticker) ? "off" : "") + '" data-t="' +
+    esc(r.Ticker) + '"><i style="background:' +
+    SERIES_COLORS[i % SERIES_COLORS.length] + '"></i>' + esc(r.Ticker) + '</span>'
+  ).join("");
+  document.querySelectorAll("#cmplegend span").forEach(el => el.onclick = () => {
+    const t = el.dataset.t;
+    if (hidden.has(t)) { hidden.delete(t); } else { hidden.add(t); }
+    drawComparative(rows);
+  });
+}
+
+document.querySelectorAll("#trendcontrols button").forEach(button => {
+  button.onclick = () => {
+    trendPeriod = button.dataset.period;
+    document.querySelectorAll("#trendcontrols button").forEach(b =>
+      b.classList.toggle("active", b === button));
+    if (latest && latest.rows) drawComparative(latest.rows);
+  };
+});
+
+function drawDetail(row) {
+  const panel = document.getElementById("detailpanel");
+  if (!row || !row.Trend) { panel.style.display = "none"; return; }
+  panel.style.display = "grid";
+  const t = row.Trend;
+  document.getElementById("d-title").textContent =
+    row.Company + " (" + row.Ticker + ") \u2014 " + row.Exchange;
+  lineChart("pricechart", [
+    { name: "Close", values: t.close, color: "#4da3ff", width: 2 },
+    { name: "SMA20", values: t.sma20, color: "#2ecc71" },
+    { name: "SMA50", values: t.sma50, color: "#ffb020" },
+    { name: "SMA100", values: t.sma100, color: "#ff6b6b" },
+  ], { labels: t.dates, decimals: 0, height: 240 });
+  barChart("barchart", t.months, t.monthly_returns);
+}
+
+/* ---------- main render ---------- */
+function render(d) {
+  latest = d;
+  const dot = document.getElementById("dot");
+  dot.className = "dot " + (d.status === "running" ? "running"
+                  : d.status === "error" ? "error" : d.status === "ok" ? "ok" : "");
+  document.getElementById("status").textContent =
+    d.status === "running" ? "scanning\u2026" :
+    d.status === "error" ? "scan failed" :
+    d.status === "ok" ? "up to date" : "waiting";
+
+  document.getElementById("m-count").textContent = d.match_count;
+  document.getElementById("m-exch").textContent =
+    Object.keys(d.by_exchange || {}).length
+      ? Object.entries(d.by_exchange).map(kv => kv[0] + " " + kv[1]).join("  \u00b7  ")
+      : "\u2014";
+  document.getElementById("m-ret").textContent =
+    d.median_return === null ? "\u2014" : d.median_return.toFixed(2) + "%";
+  document.getElementById("m-dd").textContent =
+    d.median_drawdown === null ? "\u2014" : d.median_drawdown.toFixed(2) + "%";
+  document.getElementById("m-uni").textContent =
+    d.analyzed ? d.analyzed + " / " + d.universe_size : "\u2014";
+  document.getElementById("m-time").textContent = d.live_updated
+    ? new Date(d.live_updated).toLocaleString("en-IN", { timeStyle: "medium" })
+    : d.last_run
+    ? new Date(d.last_run).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" })
+    : "never";
+
+  const err = document.getElementById("error");
+  if (d.status === "error" && d.error) {
+    err.style.display = "block"; err.textContent = "Scan error: " + d.error;
+  } else { err.style.display = "none"; }
+
+  const wrap = document.getElementById("tablewrap");
+  if (!d.rows.length) {
+    wrap.innerHTML = '<div class="empty">' + (d.status === "running"
+      ? "Scanning the universe \u2014 this takes a few minutes on the first run."
+      : "No stocks passed all filters in the latest scan.") + "</div>";
+    document.getElementById("trendpanel").style.display = "none";
+    document.getElementById("detailpanel").style.display = "none";
+  } else {
+    const cols = d.columns;
+    const rows = d.rows.slice().sort((a, b) => {
+      const x = a[sortKey], y = b[sortKey];
+      const r = numeric(sortKey) ? x - y : String(x).localeCompare(String(y));
+      return sortDesc ? -r : r;
+    });
+        let h = "<table><thead><tr><th>#</th>";
+    cols.forEach(c => {
+      h += '<th data-k="' + esc(c) + '">' + esc(c) +
+           (c === sortKey ? (sortDesc ? " \u25BC" : " \u25B2") : "") + "</th>";
+    });
+        h += '<th class="spark-head">Hourly</th><th class="spark-head">Weekly</th>' +
+          '<th class="spark-head">Monthly</th>';
+    h += "</tr></thead><tbody>";
+    rows.forEach((r, i) => {
+      const sel = r.Ticker === selected ? " class='sel'" : "";
+      h += "<tr data-t='" + esc(r.Ticker) + "'" + sel + "><td class='rank'>" + (i + 1) + "</td>";
+      cols.forEach(c => {
+        const v = r[c];
+        if (c === "Exchange") {
+          h += '<td><span class="tag ' + (v === "BSE" ? "bse" : "") + '">' +
+               esc(v) + "</span></td>";
+          return;
+        }
+        if (c === "Today Status") {
+          const statusClass = v === "Gain" ? "pos" : v === "Loss" ? "neg" : "";
+          h += '<td class="' + statusClass + '">' +
+               esc(v) + "</td>";
+          return;
+        }
+        const cls = numeric(c) && c.includes("%") ? (v >= 0 ? "pos" : "neg") : "";
+        h += '<td class="' + cls + '">' + fmt(c, v) + "</td>";
+      });
+       h += '<td class="spark-cell trend-choice" data-t="' + esc(r.Ticker) +
+         '" data-period="hour">' + rowSparkline(r, "hour", "#4da3ff") + "</td>" +
+         '<td class="spark-cell trend-choice" data-t="' + esc(r.Ticker) +
+         '" data-period="week">' + rowSparkline(r, "week", "#2ecc71") + "</td>" +
+         '<td class="spark-cell trend-choice" data-t="' + esc(r.Ticker) +
+         '" data-period="month">' + rowSparkline(r, "month", "#ffb020") + "</td>";
+      h += "</tr>";
+    });
+    wrap.innerHTML = h + "</tbody></table>";
+    wrap.querySelectorAll("th[data-k]").forEach(th => th.onclick = () => {
+      const k = th.dataset.k;
+      if (k === sortKey) { sortDesc = !sortDesc; } else { sortKey = k; sortDesc = true; }
+      render(latest);
+    });
+    wrap.querySelectorAll("tbody tr").forEach(tr => tr.onclick = () => {
+      selected = tr.dataset.t;
+      render(latest);
+    });
+    wrap.querySelectorAll(".trend-choice").forEach(cell => cell.onclick = event => {
+      event.stopPropagation();
+      selected = cell.dataset.t;
+      trendPeriod = cell.dataset.period;
+      document.querySelectorAll("#trendcontrols button").forEach(button =>
+        button.classList.toggle("active", button.dataset.period === trendPeriod));
+      render(latest);
+    });
+
+    if (!selected || !d.rows.some(r => r.Ticker === selected)) selected = rows[0].Ticker;
+    drawComparative(rows);
+    drawDetail(d.rows.find(r => r.Ticker === selected));
+  }
+
+  const rej = document.getElementById("rej");
+  rej.innerHTML = Object.keys(d.rejections || {}).length
+    ? "Scan diagnostics \u2014 " + Object.entries(d.rejections)
+        .map(kv => "<span><b>" + kv[1] + "</b> " + kv[0].replace(/_/g, " ") + "</span>").join("")
+    : "";
+
+  document.getElementById("refresh").disabled = (d.status === "running");
+}
+
+async function poll() {
+  try {
+    render(await (await fetch("/api/results")).json());
+  } catch (e) {
+    document.getElementById("status").textContent = "server offline";
+    document.getElementById("dot").className = "dot error";
+  }
+}
+
+document.getElementById("refresh").onclick = async () => {
+  document.getElementById("refresh").disabled = true;
+  await fetch("/api/refresh", { method: "POST" });
+  setTimeout(poll, 400);
+};
+
+poll();
+setInterval(poll, POLL_MS);
+</script>
+</body>
+</html>

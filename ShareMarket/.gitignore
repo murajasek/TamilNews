@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.py[cod]
+scan_cache.json
+uptrend_results.csv
+.DS_Store
