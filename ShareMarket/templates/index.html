@@ -488,9 +488,12 @@ function render(d) {
   document.getElementById("refresh").disabled = (d.status === "running");
 }
 
+// Works both standalone ("/") and proxied under the news app ("/ShareMarket").
+const BASE = location.pathname.replace(/\/+$/, "");
+
 async function poll() {
   try {
-    render(await (await fetch("/api/results")).json());
+    render(await (await fetch(BASE + "/api/results")).json());
   } catch (e) {
     document.getElementById("status").textContent = "server offline";
     document.getElementById("dot").className = "dot error";
@@ -499,7 +502,7 @@ async function poll() {
 
 document.getElementById("refresh").onclick = async () => {
   document.getElementById("refresh").disabled = true;
-  await fetch("/api/refresh", { method: "POST" });
+  await fetch(BASE + "/api/refresh", { method: "POST" });
   setTimeout(poll, 400);
 };
 

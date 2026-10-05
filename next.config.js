@@ -22,7 +22,8 @@ const nextConfig = {
   headers: async () => {
     return [
       {
-        source: '/api/:path*',
+        // Share market data refreshes every 30s, so it is excluded from CDN caching.
+        source: '/api/:path((?!sharemarket).*)',
         headers: [
           {
             key: 'Cache-Control',

@@ -301,7 +301,7 @@ button {
     color: inherit;
     white-space: nowrap;
     font-family: 'Noto Sans Tamil', sans-serif;
-    font-size: .85rem;
+    font-size: .65rem;
 }
 
 .ticker-item::before {
@@ -331,7 +331,7 @@ button {
     text-overflow: ellipsis;
     white-space: nowrap;
     font-family: 'Noto Sans Tamil', sans-serif;
-    font-size: 1rem;
+    font-size: .1 rem;
 }
 
 .feature-art {

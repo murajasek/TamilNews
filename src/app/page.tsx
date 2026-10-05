@@ -18,11 +18,6 @@ const articleFetcher = async (url: string) => {
   if (!response.ok) throw new Error(payload.error || 'Article unavailable')
   return payload
 }
-const shareMarketUrl = process.env.NEXT_PUBLIC_SHARE_MARKET_URL || 'http://127.0.0.1:8766/'
-const openShareMarket = (event: React.MouseEvent<HTMLAnchorElement>) => {
-  event.preventDefault()
-  window.open(shareMarketUrl, 'ShareMarket', 'noopener,noreferrer,width=1280,height=900')
-}
 const categories = ['அனைத்தும்', 'தமிழ்நாடு', 'இந்தியா', 'உலகம்', 'அரசியல்', 'சினிமா', 'விளையாட்டு', 'வர்த்தகம்']
 
 export default function Home() {
@@ -103,7 +98,7 @@ export default function Home() {
                 <section><h2>பிரிவுகள்</h2><nav className="footer-sections" aria-label="அடிக்குறிப்பு பிரிவுகள்"><span>தமிழ்நாடு</span><span>இந்தியா</span><span>உலகம்</span><span>அரசியல்</span><span>சினிமா</span><span>விளையாட்டு</span></nav></section>
                 <section><h2>வெளிப்படைத்தன்மை</h2><nav className="footer-links" aria-label="கொள்கை வழிசெலுத்தல்"><span>செய்தி மூலங்கள்</span><span>ஆதாரக் கொள்கை</span><span>எங்களைப் பற்றி</span></nav></section>
         </div>
-        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span><a className="share-market-link" href={shareMarketUrl} target="_blank"  onClick={openShareMarket}>ShareMarket →</a></div>
+        <div className="footer-bottom"><span>© 2026 அறத்தமிழ் செய்திகள் · மாதிரி முகப்புப் பதிப்பு</span><span>அசல் கட்டுரைகள் அந்தந்த வெளியீட்டாளர்களின் உரிமையில் உள்ளன.</span><a className="share-market-link" href="/ShareMarket">ShareMarket →</a></div>
 </footer>
     </div>
   )
