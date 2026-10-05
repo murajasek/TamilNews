@@ -21,8 +21,9 @@ const fetcher = async (url: string) => {
 const isNumeric = (column: string) => !TEXT_COLUMNS.includes(column)
 const cellValue = (row: MarketRow, column: string) => row[column as keyof MarketRow] as string | number | null
 
-function formatCell(column: string, value: string | number | null) {
+function formatCell(column: string, value: string | number | null, months: number) {
   if (value === null || value === undefined) return '—'
+  if (column === 'Months Up') return `${value}/${months}`
   if (typeof value !== 'number') return value
   return column.includes('%') ? `${value.toFixed(2)}%` : value.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
@@ -167,20 +168,21 @@ function Sparkline({ values, color }: { values: (number | null)[]; color: string
 
 export default function MarketDashboard() {
   const { data, error, mutate } = useSWR('/api/sharemarket', fetcher, { refreshInterval: 30_000, revalidateOnFocus: false })
-  const [sortKey, setSortKey] = useState('6M Return %')
+  const [sortKey, setSortKey] = useState('Months Up')
   const [sortDesc, setSortDesc] = useState(true)
+  const [exchange, setExchange] = useState<'All' | 'NSE' | 'BSE'>('All')
   const [selected, setSelected] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [period, setPeriod] = useState<Period>('hour')
   const [rescanning, setRescanning] = useState(false)
   const [notice, setNotice] = useState('')
 
-  const rows = useMemo(() => (data?.rows ?? []).slice().sort((a, b) => {
+  const rows = useMemo(() => (data?.rows ?? []).filter((row) => exchange === 'All' || row.Exchange === exchange).sort((a, b) => {
     const left = cellValue(a, sortKey)
     const right = cellValue(b, sortKey)
     const order = isNumeric(sortKey) ? Number(left ?? 0) - Number(right ?? 0) : String(left).localeCompare(String(right))
-    return sortDesc ? -order : order
-  }), [data?.rows, sortKey, sortDesc])
+    return (sortDesc ? -order : order) || b['6M Return %'] - a['6M Return %']
+  }), [data?.rows, sortKey, sortDesc, exchange])
 
   const selectedRow = rows.find((row) => row.Ticker === selected) ?? rows[0]
   const status = error ? 'offline' : data?.status ?? 'idle'
@@ -240,8 +242,8 @@ export default function MarketDashboard() {
       <header className={styles.header}>
         <a className={styles.back} href="/">← அறத்தமிழ்</a>
         <div>
-          <h1>Share Market · Top 10 Consistent Monthly Gainers</h1>
-          <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · positive returns in each of the last {data?.months ?? 6} months</div>
+          <h1>Share Market · Top 10 NSE + Top 10 BSE Monthly Gainers</h1>
+          <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · ranked by positive months out of the last {data?.months ?? 6}, then 6M return</div>
         </div>
         <div className={styles.spacer} />
         <div className={styles.pill}><span className={`${styles.dot} ${dotClass}`} />{statusText}</div>
@@ -263,10 +265,17 @@ export default function MarketDashboard() {
         {error && <div className={styles.err}>Share market service is unavailable. Please try again shortly.</div>}
         {data?.status === 'error' && data.error && <div className={styles.err}>Scan error: {data.error}</div>}
 
-        {!rows.length ? (
+        {!data?.rows.length ? (
           <div className={styles.empty}>{!data || running ? 'Scanning the market — the first run can take a minute or two.' : 'No stocks passed all filters in the latest scan.'}</div>
         ) : (
           <>
+            <div className={styles.controls} role="tablist" aria-label="Exchange">
+              {(['All', 'NSE', 'BSE'] as const).map((item) => (
+                <button key={item} role="tab" aria-selected={exchange === item} className={exchange === item ? styles.active : ''} onClick={() => setExchange(item)}>
+                  {item}{item !== 'All' && data ? ` (${data.by_exchange[item] ?? 0})` : ''}
+                </button>
+              ))}
+            </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -285,7 +294,7 @@ export default function MarketDashboard() {
                         if (column === 'Exchange') return <td key={column} data-label={column}><span className={`${styles.tag} ${value === 'BSE' ? styles.tagBse : ''}`}>{value}</span></td>
                         if (column === 'Today Status') return <td key={column} data-label={column} className={value === 'Gain' ? styles.pos : value === 'Loss' ? styles.neg : ''}>{value}</td>
                         const tone = isNumeric(column) && column.includes('%') && typeof value === 'number' ? (value >= 0 ? styles.pos : styles.neg) : ''
-                        return <td key={column} data-label={column} data-column={column} className={tone}>{formatCell(column, value)}</td>
+                        return <td key={column} data-label={column} data-column={column} className={tone}>{formatCell(column, value, data?.months ?? 6)}</td>
                       })}
                       {PERIODS.map((item, periodIndex) => (
                         <td key={item.key} data-label={item.label} className={styles.sparkCell} onClick={(event) => { event.stopPropagation(); setSelected(row.Ticker); setPeriod(item.key) }}>

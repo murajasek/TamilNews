@@ -4,7 +4,7 @@ import path from 'path'
 
 export const DISPLAY_COLUMNS = [
   'Ticker', 'Exchange', 'Company', 'Price', 'Today %', 'Today Status',
-  '6M Return %', 'Avg Monthly %', 'Worst Month %',
+  'Months Up', '6M Return %', 'Avg Monthly %', 'Worst Month %',
 ] as const
 
 export type TrendPayload = {
@@ -26,6 +26,7 @@ export type MarketRow = {
   Price: number
   'Today %': number | null
   'Today Status': string
+  'Months Up': number
   '6M Return %': number
   'Avg Monthly %': number
   'Worst Month %': number
@@ -79,7 +80,8 @@ type ChartResult = {
 const MONTHS = 6
 const MIN_MONTHLY_RETURN_PCT = -1
 const MIN_AVG_VOLUME = 50_000
-const RESULT_LIMIT = 10
+const RESULT_LIMIT_PER_EXCHANGE = 10
+const CACHE_VERSION = 2
 const HISTORY_POINTS = 130
 const SMA_WINDOWS = [20, 50, 100] as const
 const CONCURRENCY = 12
@@ -87,7 +89,7 @@ const SCAN_INTERVAL_MINUTES = Number(process.env.SHARE_MARKET_SCAN_MINUTES) || 3
 const LIVE_INTERVAL_SECONDS = 30
 const ERROR_RETRY_MS = 5 * 60_000
 const MIN_MANUAL_RESCAN_MS = 2 * 60_000
-const UNIVERSE_LIMIT = Number(process.env.SHARE_MARKET_LIMIT) || 150
+const UNIVERSE_LIMIT = Number(process.env.SHARE_MARKET_LIMIT) || 500
 const EXCHANGES = parseExchanges(process.env.SHARE_MARKET_EXCHANGES || 'NSE,BSE')
 const CACHE_FILE = path.join(os.tmpdir(), 'arathamizh-sharemarket.json')
 
@@ -317,7 +319,8 @@ function analyze(ticker: string, bars: Bar[], reasons: Rejections): Omit<MarketR
   if (monthlyFull.length < MONTHS + 1) { reasons.insufficient_history++; return null }
   const monthlyWindow = monthlyFull.slice(1)
   const monthlyReturns = monthlyWindow.map((month, index) => (month.close / monthlyFull[index].close - 1) * 100)
-  if (!monthlyReturns.every((value) => value > MIN_MONTHLY_RETURN_PCT)) { reasons.monthly_gains++; return null }
+  // Stocks missing a month are kept as fill-ins and ranked below consistent gainers.
+  if (!monthlyReturns.every((value) => value > MIN_MONTHLY_RETURN_PCT)) reasons.monthly_gains++
 
   const closes = bars.map((bar) => bar.close)
   const smas = Object.fromEntries(SMA_WINDOWS.map((window) => [window, rollingMean(closes, window)])) as Record<20 | 50 | 100, (number | null)[]>
@@ -343,6 +346,7 @@ function analyze(ticker: string, bars: Bar[], reasons: Rejections): Omit<MarketR
     Price: round2(lastPrice),
     'Today %': round2(todayPct),
     'Today Status': todayPct >= 0 ? 'Gain' : 'Loss',
+    'Months Up': monthlyReturns.filter((value) => value > MIN_MONTHLY_RETURN_PCT).length,
     '6M Return %': round2((lastPrice / startPrice - 1) * 100),
     'Avg Monthly %': round2(((lastPrice / startPrice) ** (1 / MONTHS) - 1) * 100),
     'Worst Month %': round2(Math.min(...monthlyReturns)),
@@ -378,7 +382,7 @@ async function addHourlyTrends(rows: MarketRow[]) {
 async function saveCache() {
   try {
     await fs.writeFile(CACHE_FILE, JSON.stringify({
-      months: MONTHS, rows: state.rows, rejections: state.rejections, last_run: state.lastRun,
+      version: CACHE_VERSION, months: MONTHS, rows: state.rows, rejections: state.rejections, last_run: state.lastRun,
       universe_size: state.universeSize, analyzed: state.analyzed, duration_sec: state.durationSec,
       live_updated: state.liveUpdated,
     }), 'utf-8')
@@ -392,7 +396,7 @@ async function loadCache() {
   state.cacheLoaded = true
   try {
     const payload = JSON.parse(await fs.readFile(CACHE_FILE, 'utf-8'))
-    if (payload.months !== MONTHS || !Array.isArray(payload.rows)) return
+    if (payload.version !== CACHE_VERSION || payload.months !== MONTHS || !Array.isArray(payload.rows)) return
     state.rows = payload.rows
     state.rejections = payload.rejections ?? {}
     state.lastRun = payload.last_run ?? null
@@ -421,14 +425,14 @@ async function runScan() {
     if (!usable.length) throw new Error('No price data returned (network or rate limit).')
 
     const reasons: Rejections = { insufficient_history: 0, illiquid: 0, monthly_gains: 0, ma_alignment: 0, market_structure: 0, drawdown: 0 }
-    const rows: MarketRow[] = usable
+    const ranked: MarketRow[] = usable
       .map(({ ticker, data }) => {
         const row = analyze(ticker, data!.bars, reasons)
         return row && { ...row, Company: names.get(ticker) || data!.name || rootOf(ticker) }
       })
       .filter((row): row is MarketRow => row !== null)
-      .sort((a, b) => b['6M Return %'] - a['6M Return %'])
-      .slice(0, RESULT_LIMIT)
+      .sort((a, b) => b['Months Up'] - a['Months Up'] || b['6M Return %'] - a['6M Return %'])
+    const rows = EXCHANGES.flatMap((exchange) => ranked.filter((row) => row.Exchange === exchange).slice(0, RESULT_LIMIT_PER_EXCHANGE))
     await addHourlyTrends(rows)
 
     state.rows = rows
