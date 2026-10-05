@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import useSWR from 'swr'
 import type { MarketRow, MarketSnapshot, TrendPayload } from '@/lib/sharemarket'
 import styles from './sharemarket.module.css'
@@ -68,11 +68,31 @@ function pathFrom(values: (number | null)[], x: (index: number) => number, y: (v
   return path.trim()
 }
 
-function LineChart({ series, labels, height = 260 }: { series: Series[]; labels: string[]; height?: number }) {
-  const width = 900
-  const pad = { l: 46, r: 12, t: 12, b: 22 }
+// Charts render at the container's real pixel width so text never stretches.
+function useContainerWidth(fallback: number) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [width, setWidth] = useState(fallback)
+  useEffect(() => {
+    const element = ref.current
+    if (!element) return
+    const observer = new ResizeObserver(([entry]) => setWidth(Math.max(260, Math.floor(entry.contentRect.width))))
+    observer.observe(element)
+    return () => observer.disconnect()
+  }, [])
+  return [ref, width] as const
+}
+
+function formatAxisLabel(label: string) {
+  if (!label.includes('T')) return label
+  return new Date(label).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false })
+}
+
+function LineChart({ series, labels, height: maxHeight = 260 }: { series: Series[]; labels: string[]; height?: number }) {
+  const [ref, width] = useContainerWidth(900)
+  const height = Math.round(Math.min(maxHeight, Math.max(180, width * 0.6)))
+  const pad = { l: 42, r: 10, t: 12, b: 22 }
   const shown = series.filter((item) => item.values.some((value) => value !== null))
-  if (!shown.length) return null
+  if (!shown.length) return <div ref={ref} />
   const flat = shown.flatMap((item) => item.values).filter((value): value is number => value !== null)
   const padding = (Math.max(...flat) - Math.min(...flat)) * 0.06 || 1
   const min = Math.min(...flat) - padding
@@ -80,31 +100,35 @@ function LineChart({ series, labels, height = 260 }: { series: Series[]; labels:
   const count = shown[0].values.length
   const x = (index: number) => pad.l + (index / Math.max(1, count - 1)) * (width - pad.l - pad.r)
   const y = scaler(min, max, pad.t, height - pad.b)
+  const ticks = Array.from(new Set(width < 480 ? [0, count - 1] : [0, Math.floor(count / 2), count - 1]))
   return (
-    <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} height={height} preserveAspectRatio="none">
+    <div ref={ref}>
+    <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
       {[0, 1, 2, 3, 4].map((step) => {
         const value = min + (max - min) * step / 4
         return <g key={step}><line className={styles.gridLine} x1={pad.l} x2={width - pad.r} y1={y(value)} y2={y(value)} /><text x={4} y={y(value) + 3}>{value.toFixed(0)}</text></g>
       })}
       <line className={styles.axis} x1={pad.l} x2={width - pad.r} y1={height - pad.b} y2={height - pad.b} />
-      {Array.from(new Set([0, Math.floor(count / 2), count - 1])).map((index) => labels[index] && <text key={index} x={x(index)} y={height - 6} textAnchor="middle">{labels[index]}</text>)}
+      {ticks.map((index) => labels[index] && <text key={index} x={x(index)} y={height - 6} textAnchor={index === 0 ? 'start' : index === count - 1 ? 'end' : 'middle'}>{formatAxisLabel(labels[index])}</text>)}
       {shown.map((item) => <path key={item.name} d={pathFrom(item.values, x, y)} fill="none" stroke={item.color} strokeWidth={item.width ?? 1.6} strokeLinejoin="round" />)}
     </svg>
+    </div>
   )
 }
 
 function BarChart({ labels, values }: { labels: string[]; values: number[] }) {
-  const width = 380
+  const [ref, width] = useContainerWidth(380)
   const height = 240
-  const pad = { l: 40, r: 10, t: 12, b: 40 }
-  if (!values.length) return null
+  const pad = { l: 10, r: 10, t: 16, b: 46 }
+  if (!values.length) return <div ref={ref} />
   const max = Math.max(...values, 0)
   const min = Math.min(...values, 0)
   const padding = (max - min) * 0.15 || 1
   const y = scaler(min - padding, max + padding, pad.t, height - pad.b)
   const barWidth = (width - pad.l - pad.r) / values.length
   return (
-    <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} height={height} preserveAspectRatio="none">
+    <div ref={ref}>
+    <svg className={styles.chart} viewBox={`0 0 ${width} ${height}`} width={width} height={height}>
       <line className={styles.axis} x1={pad.l} x2={width - pad.r} y1={y(0)} y2={y(0)} />
       {values.map((value, index) => {
         const left = pad.l + index * barWidth + barWidth * 0.18
@@ -120,6 +144,7 @@ function BarChart({ labels, values }: { labels: string[]; values: number[] }) {
         )
       })}
     </svg>
+    </div>
   )
 }
 
@@ -254,16 +279,16 @@ export default function MarketDashboard() {
                 <tbody>
                   {rows.map((row, index) => (
                     <tr key={row.Ticker} className={row.Ticker === selectedRow?.Ticker ? styles.selected : undefined} onClick={() => setSelected(row.Ticker)}>
-                      <td className={styles.rank}>{index + 1}</td>
+                      <td className={styles.rank} data-label="#">{index + 1}</td>
                       {columns.map((column) => {
                         const value = cellValue(row, column)
-                        if (column === 'Exchange') return <td key={column}><span className={`${styles.tag} ${value === 'BSE' ? styles.tagBse : ''}`}>{value}</span></td>
-                        if (column === 'Today Status') return <td key={column} className={value === 'Gain' ? styles.pos : value === 'Loss' ? styles.neg : ''}>{value}</td>
+                        if (column === 'Exchange') return <td key={column} data-label={column}><span className={`${styles.tag} ${value === 'BSE' ? styles.tagBse : ''}`}>{value}</span></td>
+                        if (column === 'Today Status') return <td key={column} data-label={column} className={value === 'Gain' ? styles.pos : value === 'Loss' ? styles.neg : ''}>{value}</td>
                         const tone = isNumeric(column) && column.includes('%') && typeof value === 'number' ? (value >= 0 ? styles.pos : styles.neg) : ''
-                        return <td key={column} className={tone}>{formatCell(column, value)}</td>
+                        return <td key={column} data-label={column} data-column={column} className={tone}>{formatCell(column, value)}</td>
                       })}
                       {PERIODS.map((item, periodIndex) => (
-                        <td key={item.key} className={styles.sparkCell} onClick={(event) => { event.stopPropagation(); setSelected(row.Ticker); setPeriod(item.key) }}>
+                        <td key={item.key} data-label={item.label} className={styles.sparkCell} onClick={(event) => { event.stopPropagation(); setSelected(row.Ticker); setPeriod(item.key) }}>
                           <Sparkline values={aggregateTrend(row.Trend, item.key, row.Price).values} color={SERIES_COLORS[periodIndex]} />
                         </td>
                       ))}
