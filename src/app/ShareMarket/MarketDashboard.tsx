@@ -259,7 +259,7 @@ export default function MarketDashboard() {
   const lastUpdated = data?.live_updated
     ? new Date(data.live_updated).toLocaleString('en-IN', { timeStyle: 'medium' })
     : data?.last_run ? new Date(data.last_run).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'never'
-  const columns = (data?.columns ?? []).filter((column) => deviceMode !== 'mobile' || !['Avg Monthly %', 'Worst Month %', 'Months Up'].includes(column))
+  const columns = (data?.columns ?? []).filter((column) => column !== 'Exchange' && (deviceMode !== 'mobile' || !['Avg Monthly %', 'Worst Month %', 'Months Up'].includes(column)))
   const selectedPeriod = PERIODS.find((item) => item.key === period) ?? PERIODS[0]
   const selectedTrend = selectedRow ? aggregateTrend(selectedRow.Trend, period, selectedRow.Price) : { labels: [], values: [] }
 

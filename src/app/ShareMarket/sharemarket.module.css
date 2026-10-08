@@ -13,7 +13,7 @@
   background: var(--bg);
   color: var(--text);
   font-family: 'Manrope', system-ui, sans-serif;
-  font-size: 14px;
+  font-size: 12px;
 }
 
 .header {
@@ -22,12 +22,11 @@
   display: flex;
   align-items: center;
   gap: 18px;
-  flex-wrap: wrap;
   background: var(--panel);
 }
 
-.header h1 { font-size: 19px; margin: 0; letter-spacing: .3px; }
-.sub { color: var(--muted); font-size: 12px; }
+.header h1 { font-size: 16px; margin: 0; letter-spacing: .3px; }
+.sub { color: var(--muted); font-size: 10px; }
 .spacer { flex: 1; }
 
 .back {
@@ -45,12 +44,11 @@
   border-radius: 999px;
   background: #1d2740;
   border: 1px solid var(--line);
-  font-size: 12px;
+  font-size: 10px;
 }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
 .dotOk { background: var(--up); }
-.dotRunning { background: var(--warn); animation: pulse 1s infinite; }
 .dotError { background: var(--down); }
 @keyframes pulse { 50% { opacity: .25; } }
 
@@ -61,7 +59,7 @@
   border-radius: 6px;
   padding: 8px 16px;
   font-weight: 600;
-  font-size: 13px;
+  font-size: 11px;
 }
 .button:disabled { opacity: .5; cursor: not-allowed; }
 
@@ -75,9 +73,9 @@
   padding: 14px 18px;
   min-width: 145px;
 }
-.label { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .6px; }
-.value { font-size: 22px; font-weight: 600; margin-top: 5px; }
-.valueSmall { font-size: 15px; }
+.label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .6px; }
+.value { font-size: 19px; font-weight: 600; margin-top: 5px; }
+.valueSmall { font-size: 13px; }
 
 .panel {
   background: var(--panel);
@@ -87,10 +85,10 @@
   margin-bottom: 20px;
   min-width: 0;
 }
-.panel h2 { font-size: 14px; margin: 0 0 4px; font-weight: 600; }
-.hint { color: var(--muted); font-size: 11px; margin-bottom: 10px; }
+.panel h2 { font-size: 12px; margin: 0 0 4px; font-weight: 600; }
+.hint { color: var(--muted); font-size: 10px; margin-bottom: 10px; }
 
-.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 11px; }
+.legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px; font-size: 10px; }
 .legendItem {
   display: inline-flex;
   align-items: center;
@@ -99,7 +97,7 @@
   background: none;
   border: 0;
   padding: 0;
-  font-size: 11px;
+  font-size: 10px;
 }
 .legendItem i { width: 16px; height: 3px; border-radius: 2px; display: inline-block; }
 .legendOff { opacity: .35; text-decoration: line-through; }
@@ -328,4 +326,61 @@
 @media (min-width: 641px) and (max-width: 1100px) {
   .table tbody { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .table tbody tr { margin-bottom: 0; }
+}
+
+@media (max-width: 1100px) {
+  .tableWrap { overflow-x: auto; overflow-y: visible; }
+  .table { display: table; width: 100%; min-width: 1040px; table-layout: fixed; border-radius: 0; }
+  .table thead { display: table-header-group; }
+  .table tbody { display: table-row-group; }
+  .table tbody tr {
+    display: table-row;
+    margin: 0;
+    padding: 0;
+    background: var(--panel);
+    border: 0;
+    border-radius: 0;
+  }
+  .table tbody tr.selected { border: 0; background: #1e2c47; }
+  .table th, .table td, .table td:nth-child(-n+4) {
+    display: table-cell;
+    min-width: 0;
+    padding: 9px 8px;
+    border-bottom: 1px solid var(--line);
+    text-align: right;
+    vertical-align: middle;
+  }
+  .table th:nth-child(-n+4), .table td:nth-child(-n+4) { text-align: left; }
+  .table td::before { display: none; }
+  .table td[data-column='Company'] {
+    display: table-cell;
+    grid-column: auto;
+    order: initial;
+    min-width: 160px;
+    font-size: inherit;
+    font-weight: inherit;
+    text-align: left;
+    border-bottom: 1px solid var(--line);
+  }
+  .table tbody td.rank { display: table-cell; }
+  .table .sparkCell {
+    display: table-cell;
+    width: 86px;
+    min-width: 86px;
+    padding: 7px 5px;
+    border-bottom: 1px solid var(--line);
+    text-align: center;
+  }
+  .table .sparkCell::before { display: none; }
+  .spark { width: 76px; max-width: none; }
+}
+
+@media (max-width: 640px) {
+  .table { min-width: 720px; }
+  .table th, .table td { padding: 8px 6px; font-size: 11px; }
+  .table th { font-size: 10px; }
+  .table th:nth-child(4), .table td:nth-child(4) { width: 132px; }
+  .table th:nth-child(5), .table td:nth-child(5) { width: 78px; }
+  .table .sparkCell { width: 78px; min-width: 78px; }
+  .spark { width: 68px; }
 }
