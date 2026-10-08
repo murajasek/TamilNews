@@ -5,12 +5,24 @@ import useSWR from 'swr'
 import type { MarketRow, MarketSnapshot, TrendPayload } from '@/lib/sharemarket'
 import styles from './sharemarket.module.css'
 
-type Period = 'hour' | 'week' | 'month'
+type Period = 'hour' | 'day' | 'week' | 'month' | 'year'
+type DeviceMode = 'mobile' | 'tablet' | 'computer'
 type Series = { name: string; values: (number | null)[]; color: string; width?: number }
 
 const SERIES_COLORS = ['#4da3ff', '#2ecc71', '#ffb020', '#ff6b6b', '#c58bff', '#40e0d0', '#ff9f43', '#7bed9f', '#f78fb3', '#70a1ff']
 const TEXT_COLUMNS = ['Ticker', 'Company', 'Exchange', 'Today Status']
-const PERIODS: { key: Period; label: string }[] = [{ key: 'hour', label: 'Hourly' }, { key: 'week', label: 'Weekly' }, { key: 'month', label: 'Monthly' }]
+const PERIODS: { key: Period; label: string }[] = [
+  { key: 'hour', label: 'Hourly' },
+  { key: 'day', label: 'Daily' },
+  { key: 'week', label: 'Weekly' },
+  { key: 'month', label: 'Monthly' },
+  { key: 'year', label: 'Yearly' },
+]
+const DEVICE_MODES: { key: DeviceMode; label: string; icon: string }[] = [
+  { key: 'mobile', label: 'Mobile', icon: '▯' },
+  { key: 'tablet', label: 'Tablet', icon: '▤' },
+  { key: 'computer', label: 'Computer', icon: '▣' },
+]
 
 const fetcher = async (url: string) => {
   const response = await fetch(url)
@@ -32,12 +44,13 @@ function aggregateTrend(trend: TrendPayload, period: Period, livePrice?: number)
   if (period === 'hour') return { labels: trend.hourly?.dates ?? [], values: trend.hourly?.close ?? [] as (number | null)[] }
   const closes = trend.close.slice()
   if (livePrice != null && closes.length) closes[closes.length - 1] = livePrice
+  if (period === 'day') return { labels: trend.dates, values: closes }
   const buckets: { label: string; value: number | null }[] = []
   const seen = new Map<string, number>()
   trend.dates.forEach((date, index) => {
     let key: string
     let label: string
-    if (period === 'week') {
+    if (period === 'week' || period === 'year') {
       const day = new Date(`${date}T00:00:00Z`)
       day.setUTCDate(day.getUTCDate() - ((day.getUTCDay() + 6) % 7))
       key = day.toISOString().slice(0, 10)
@@ -174,8 +187,19 @@ export default function MarketDashboard() {
   const [selected, setSelected] = useState<string | null>(null)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [period, setPeriod] = useState<Period>('hour')
+  const [deviceMode, setDeviceMode] = useState<DeviceMode>('computer')
   const [rescanning, setRescanning] = useState(false)
   const [notice, setNotice] = useState('')
+
+  useEffect(() => {
+    const updateDeviceMode = () => {
+      const width = window.innerWidth
+      setDeviceMode(width <= 640 ? 'mobile' : width <= 1100 ? 'tablet' : 'computer')
+    }
+    updateDeviceMode()
+    window.addEventListener('resize', updateDeviceMode)
+    return () => window.removeEventListener('resize', updateDeviceMode)
+  }, [])
 
   const rows = useMemo(() => (data?.rows ?? []).filter((row) => exchange === 'All' || row.Exchange === exchange).sort((a, b) => {
     const left = cellValue(a, sortKey)
@@ -235,7 +259,9 @@ export default function MarketDashboard() {
   const lastUpdated = data?.live_updated
     ? new Date(data.live_updated).toLocaleString('en-IN', { timeStyle: 'medium' })
     : data?.last_run ? new Date(data.last_run).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'never'
-  const columns = data?.columns ?? []
+  const columns = (data?.columns ?? []).filter((column) => deviceMode !== 'mobile' || !['Avg Monthly %', 'Worst Month %', 'Months Up'].includes(column))
+  const selectedPeriod = PERIODS.find((item) => item.key === period) ?? PERIODS[0]
+  const selectedTrend = selectedRow ? aggregateTrend(selectedRow.Trend, period, selectedRow.Price) : { labels: [], values: [] }
 
   return (
     <div className={styles.shell}>
@@ -244,6 +270,9 @@ export default function MarketDashboard() {
         <div>
           <h1>Share Market · Top 10 NSE + Top 10 BSE Monthly Gainers</h1>
           <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · ranked by positive months out of the last {data?.months ?? 6}, then 6M return</div>
+        </div>
+        <div className={styles.deviceControls} aria-label="Screen layout" role="group">
+          {DEVICE_MODES.map((mode) => <button key={mode.key} className={deviceMode === mode.key ? styles.active : ''} aria-pressed={deviceMode === mode.key} onClick={() => setDeviceMode(mode.key)}><span className={styles.deviceIcon} aria-hidden="true">{mode.icon}</span>{mode.label}</button>)}
         </div>
         <div className={styles.spacer} />
         <div className={styles.pill}><span className={`${styles.dot} ${dotClass}`} />{statusText}</div>
@@ -261,9 +290,16 @@ export default function MarketDashboard() {
           <div className={styles.card}><div className={styles.label}>Live Updated</div><div className={`${styles.value} ${styles.valueSmall}`}>{lastUpdated}</div></div>
         </div>
 
+        <div className={styles.toolbar}>
+          <div className={styles.trendControls} aria-label="Trend period" role="group">
+            {PERIODS.map((item) => <button key={item.key} className={period === item.key ? styles.active : ''} aria-pressed={period === item.key} onClick={() => setPeriod(item.key)}>{item.label}</button>)}
+          </div>
+        </div>
+
         {notice && <div className={styles.err}>{notice}</div>}
         {error && <div className={styles.err}>Share market service is unavailable. Please try again shortly.</div>}
         {data?.status === 'error' && data.error && <div className={styles.err}>Scan error: {data.error}</div>}
+        {data?.live_error && <div className={styles.err}>Live price refresh unavailable: {data.live_error}</div>}
 
         {!data?.rows.length ? (
           <div className={styles.empty}>{!data || running ? 'Scanning the market — the first run can take a minute or two.' : 'No stocks passed all filters in the latest scan.'}</div>
@@ -282,7 +318,7 @@ export default function MarketDashboard() {
                   <tr>
                     <th>#</th>
                     {columns.map((column) => <th key={column} onClick={() => sortBy(column)}>{column}{column === sortKey ? (sortDesc ? ' ▼' : ' ▲') : ''}</th>)}
-                    {PERIODS.map((item) => <th key={item.key} className={styles.sparkHead}>{item.label}</th>)}
+                    <th className={styles.sparkHead}>{selectedPeriod.label} Trend</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -296,11 +332,9 @@ export default function MarketDashboard() {
                         const tone = isNumeric(column) && column.includes('%') && typeof value === 'number' ? (value >= 0 ? styles.pos : styles.neg) : ''
                         return <td key={column} data-label={column} data-column={column} className={tone}>{formatCell(column, value, data?.months ?? 6)}</td>
                       })}
-                      {PERIODS.map((item, periodIndex) => (
-                        <td key={item.key} data-label={item.label} className={styles.sparkCell} onClick={(event) => { event.stopPropagation(); setSelected(row.Ticker); setPeriod(item.key) }}>
-                          <Sparkline values={aggregateTrend(row.Trend, item.key, row.Price).values} color={SERIES_COLORS[periodIndex]} />
-                        </td>
-                      ))}
+                      <td data-label={`${selectedPeriod.label} Trend`} className={styles.sparkCell}>
+                        <Sparkline values={aggregateTrend(row.Trend, period, row.Price).values} color={SERIES_COLORS[PERIODS.findIndex((item) => item.key === period) % SERIES_COLORS.length]} />
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -311,13 +345,8 @@ export default function MarketDashboard() {
               <div className={styles.charts}>
                 <div className={styles.panel}>
                   <h2>{selectedRow.Company} ({selectedRow.Ticker}) — {selectedRow.Exchange}</h2>
-                  <div className={styles.hint}>Daily close with 20 / 50 / 100-day SMA overlays.</div>
-                  <LineChart height={240} labels={selectedRow.Trend.dates} series={[
-                    { name: 'Close', values: selectedRow.Trend.close, color: '#4da3ff', width: 2 },
-                    { name: 'SMA20', values: selectedRow.Trend.sma20, color: '#2ecc71' },
-                    { name: 'SMA50', values: selectedRow.Trend.sma50, color: '#ffb020' },
-                    { name: 'SMA100', values: selectedRow.Trend.sma100, color: '#ff6b6b' },
-                  ]} />
+                  <div className={styles.hint}>{selectedPeriod.label} live trend</div>
+                  <LineChart height={240} labels={selectedTrend.labels} series={[{ name: selectedPeriod.label, values: selectedTrend.values, color: '#4da3ff', width: 2 }]} />
                   <div className={styles.legend}>
                     {[['Close', '#4da3ff'], ['SMA 20', '#2ecc71'], ['SMA 50', '#ffb020'], ['SMA 100', '#ff6b6b']].map(([name, color]) => <span key={name} className={styles.legendItem}><i style={{ background: color }} />{name}</span>)}
                   </div>

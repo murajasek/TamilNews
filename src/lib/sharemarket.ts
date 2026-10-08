@@ -456,10 +456,15 @@ async function runScan() {
 async function refreshLiveQuotes() {
   const tickers = state.rows.map((row) => row.Ticker)
   try {
-    const quotes = await mapPool(tickers, CONCURRENCY, async (ticker) => ({ ticker, meta: (await fetchChart(ticker, 'range=1d&interval=1d'))?.meta }))
+    const quotes = await mapPool(tickers, CONCURRENCY, async (ticker) => {
+      const result = await fetchChart(ticker, 'range=1d&interval=1m')
+      const closes = result?.indicators?.quote?.[0]?.close ?? []
+      const intradayPrice = [...closes].reverse().find((value): value is number => value != null && Number.isFinite(value))
+      return { ticker, meta: result?.meta, price: intradayPrice }
+    })
     let updated = 0
-    for (const { ticker, meta } of quotes) {
-      const price = meta?.regularMarketPrice
+    for (const { ticker, meta, price: intradayPrice } of quotes) {
+      const price = intradayPrice ?? meta?.regularMarketPrice
       const previous = meta?.previousClose ?? meta?.chartPreviousClose
       const row = state.rows.find((candidate) => candidate.Ticker === ticker)
       if (!row || !price || !previous) continue

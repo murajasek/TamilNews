@@ -115,9 +115,33 @@
 }
 .controls .active { background: var(--accent); color: #04121f; border-color: var(--accent); }
 
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 0 0 14px;
+}
+
+.deviceControls, .trendControls { display: flex; gap: 6px; flex-wrap: wrap; }
+.deviceControls button, .trendControls button {
+  min-height: 34px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #1d2740;
+  color: var(--muted);
+  font-size: 12px;
+}
+.deviceControls button:hover, .trendControls button:hover { color: var(--text); }
+.deviceIcon { margin-right: 5px; font-size: 15px; line-height: 1; }
+.deviceControls .active, .trendControls .active { background: var(--accent); border-color: var(--accent); color: #04121f; }
+
 .tableWrap { overflow-x: auto; margin-bottom: 20px; }
 .table {
   width: 100%;
+  table-layout: fixed;
   border-collapse: collapse;
   background: var(--panel);
   border: 1px solid var(--line);
@@ -145,6 +169,17 @@
 .sparkCell:hover { background: #1e2c47; }
 .spark { display: inline-block; width: 92px; height: 30px; vertical-align: middle; }
 .table td[data-column='Company'] { min-width: 170px; }
+
+@media (min-width: 1101px) {
+  .table th, .table td { padding: 9px 6px; overflow: hidden; text-overflow: ellipsis; }
+  .table th:nth-child(1), .table td:nth-child(1) { width: 34px; }
+  .table th:nth-child(2), .table td:nth-child(2) { width: 84px; }
+  .table th:nth-child(3), .table td:nth-child(3) { width: 62px; }
+  .table th:nth-child(4), .table td:nth-child(4) { width: 150px; }
+  .table th:nth-child(n+5):nth-child(-n+11), .table td:nth-child(n+5):nth-child(-n+11) { width: 76px; }
+  .table .sparkHead, .table .sparkCell { width: 86px; }
+  .spark { width: 76px; }
+}
 
 .pos { color: var(--up); }
 .neg { color: var(--down); }
@@ -216,6 +251,10 @@
   .valueSmall { font-size: 13px; }
 
   .panel { padding: 14px 12px; margin-bottom: 14px; }
+  .toolbar { align-items: stretch; }
+  .deviceControls, .trendControls { width: 100%; }
+  .deviceControls button, .trendControls button { flex: 1; min-width: 0; padding: 6px 4px; }
+  .deviceIcon { display: block; margin: 0 0 2px; }
   .controls button { min-height: 36px; padding: 6px 14px; font-size: 12px; flex: 1; }
   .legend { gap: 6px 12px; }
   .legendItem { min-height: 30px; }
