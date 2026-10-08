@@ -256,43 +256,39 @@ export default function MarketDashboard() {
 
   const dotClass = status === 'running' ? styles.dotRunning : status === 'ok' ? styles.dotOk : status === 'error' || status === 'offline' ? styles.dotError : ''
   const statusText = { running: 'scanning…', error: 'scan failed', ok: 'up to date', idle: 'waiting', offline: 'server offline' }[status]
-  const lastUpdated = data?.live_updated
-    ? new Date(data.live_updated).toLocaleString('en-IN', { timeStyle: 'medium' })
-    : data?.last_run ? new Date(data.last_run).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' }) : 'never'
   const columns = (data?.columns ?? []).filter((column) => column !== 'Exchange' && (deviceMode !== 'mobile' || !['Avg Monthly %', 'Worst Month %', 'Months Up'].includes(column)))
   const selectedPeriod = PERIODS.find((item) => item.key === period) ?? PERIODS[0]
   const selectedTrend = selectedRow ? aggregateTrend(selectedRow.Trend, period, selectedRow.Price) : { labels: [], values: [] }
 
   return (
-    <div className={styles.shell}>
+    <div className={`${styles.shell} ${styles[deviceMode]}`}>
       <header className={styles.header}>
-        <a className={styles.back} href="/">← அறத்தமிழ்</a>
-        <div>
+        <div className={styles.titleBlock}>
           <h1>Share Market · Top 10 NSE + Top 10 BSE Monthly Gainers</h1>
           <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · ranked by positive months out of the last {data?.months ?? 6}, then 6M return</div>
         </div>
-        <div className={styles.deviceControls} aria-label="Screen layout" role="group">
-          {DEVICE_MODES.map((mode) => <button key={mode.key} className={deviceMode === mode.key ? styles.active : ''} aria-pressed={deviceMode === mode.key} onClick={() => setDeviceMode(mode.key)}><span className={styles.deviceIcon} aria-hidden="true">{mode.icon}</span>{mode.label}</button>)}
-        </div>
+        <a className={styles.back} href="/">← அறத்தமிழ்</a>
         <div className={styles.spacer} />
-        <div className={styles.pill}><span className={`${styles.dot} ${dotClass}`} />{statusText}</div>
-        <div className={styles.pill}>live refresh <strong>{data?.live_interval_seconds ?? 30} sec</strong></div>
+        <div className={styles.pill} title={statusText} aria-label={statusText}><span className={`${styles.dot} ${dotClass}`} /></div>
         <button className={styles.button} onClick={rescan} disabled={running}>{running ? 'Scanning…' : 'Rescan market'}</button>
       </header>
 
       <main className={styles.main}>
-        <div className={styles.cards}>
-          <div className={styles.card}><div className={styles.label}>Companies</div><div className={styles.value}>{data?.match_count ?? '—'}</div></div>
-          <div className={styles.card}><div className={styles.label}>By Exchange</div><div className={`${styles.value} ${styles.valueSmall}`}>{data && Object.keys(data.by_exchange).length ? Object.entries(data.by_exchange).map(([exchange, count]) => `${exchange} ${count}`).join('  ·  ') : '—'}</div></div>
-          <div className={styles.card}><div className={styles.label}>Median Return</div><div className={styles.value}>{data?.median_return == null ? '—' : `${data.median_return.toFixed(2)}%`}</div></div>
-          <div className={styles.card}><div className={styles.label}>Median Max DD</div><div className={styles.value}>{data?.median_drawdown == null ? '—' : `${data.median_drawdown.toFixed(2)}%`}</div></div>
-          <div className={styles.card}><div className={styles.label}>Analyzed</div><div className={styles.value}>{data?.analyzed ? `${data.analyzed} / ${data.universe_size}` : '—'}</div></div>
-          <div className={styles.card}><div className={styles.label}>Live Updated</div><div className={`${styles.value} ${styles.valueSmall}`}>{lastUpdated}</div></div>
-        </div>
-
         <div className={styles.toolbar}>
+          <div className={styles.controlRow}>
           <div className={styles.trendControls} aria-label="Trend period" role="group">
             {PERIODS.map((item) => <button key={item.key} className={period === item.key ? styles.active : ''} aria-pressed={period === item.key} onClick={() => setPeriod(item.key)}>{item.label}</button>)}
+          </div>
+          <div className={styles.deviceControls} aria-label="Screen layout" role="group">
+            {DEVICE_MODES.map((mode) => <button key={mode.key} title={mode.label} aria-label={mode.label} className={deviceMode === mode.key ? styles.active : ''} aria-pressed={deviceMode === mode.key} onClick={() => setDeviceMode(mode.key)}><span className={styles.deviceIcon} aria-hidden="true">{mode.icon}</span></button>)}
+          </div>
+          <div className={styles.controls} role="tablist" aria-label="Exchange">
+            {(['All', 'NSE', 'BSE'] as const).map((item) => (
+              <button key={item} role="tab" aria-selected={exchange === item} className={exchange === item ? styles.active : ''} onClick={() => setExchange(item)}>
+                {item}{item !== 'All' && data ? ` (${data.by_exchange[item] ?? 0})` : ''}
+              </button>
+            ))}
+          </div>
           </div>
         </div>
 
@@ -305,13 +301,6 @@ export default function MarketDashboard() {
           <div className={styles.empty}>{!data || running ? 'Scanning the market — the first run can take a minute or two.' : 'No stocks passed all filters in the latest scan.'}</div>
         ) : (
           <>
-            <div className={styles.controls} role="tablist" aria-label="Exchange">
-              {(['All', 'NSE', 'BSE'] as const).map((item) => (
-                <button key={item} role="tab" aria-selected={exchange === item} className={exchange === item ? styles.active : ''} onClick={() => setExchange(item)}>
-                  {item}{item !== 'All' && data ? ` (${data.by_exchange[item] ?? 0})` : ''}
-                </button>
-              ))}
-            </div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -379,7 +368,11 @@ export default function MarketDashboard() {
       </main>
 
       <footer className={styles.footer}>
-        Prices and Today Gain/Loss refresh every {data?.live_interval_seconds ?? 30} seconds. The full market selection refreshes every {data?.scan_interval_minutes ?? 30} minutes. Data via Yahoo Finance · informational use only, not investment advice.
+        <div className={styles.footerActions}>
+          <a className={styles.footerLink} href="/">Arthamizh</a>
+          <button className={styles.button} onClick={rescan} disabled={running}>{running ? 'Scanning…' : 'Rescan'}</button>
+        </div>
+        <div>Full market selection refreshes every {data?.scan_interval_minutes ?? 30} minutes. Data via Yahoo Finance · informational use only, not investment advice.</div>
       </footer>
     </div>
   )
