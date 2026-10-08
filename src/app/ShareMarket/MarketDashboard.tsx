@@ -264,8 +264,8 @@ export default function MarketDashboard() {
     <div className={`${styles.shell} ${styles[deviceMode]}`}>
       <header className={styles.header}>
         <div className={styles.titleBlock}>
-          <h1>Share Market · Top 10 NSE + Top 10 BSE Monthly Gainers</h1>
-          <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · ranked by positive months out of the last {data?.months ?? 6}, then 6M return</div>
+          <h1>Share Market · Consistent 6-Month Gainers</h1>
+          <div className={styles.sub}>{data?.universe ?? 'NSE + BSE'} · every one of the last {data?.months ?? 6} months gained</div>
         </div>
         <a className={styles.back} href="/">← அறத்தமிழ்</a>
         <div className={styles.spacer} />

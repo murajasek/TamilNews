@@ -81,7 +81,7 @@ const MONTHS = 6
 const MIN_MONTHLY_RETURN_PCT = -1
 const MIN_AVG_VOLUME = 50_000
 const RESULT_LIMIT_PER_EXCHANGE = 10
-const CACHE_VERSION = 2
+const CACHE_VERSION = 3
 const HISTORY_POINTS = 130
 const SMA_WINDOWS = [20, 50, 100] as const
 const CONCURRENCY = 12
@@ -432,7 +432,8 @@ async function runScan() {
       })
       .filter((row): row is MarketRow => row !== null)
       .sort((a, b) => b['Months Up'] - a['Months Up'] || b['6M Return %'] - a['6M Return %'])
-    const rows = EXCHANGES.flatMap((exchange) => ranked.filter((row) => row.Exchange === exchange).slice(0, RESULT_LIMIT_PER_EXCHANGE))
+    const consistent = ranked.filter((row) => row['Months Up'] === MONTHS)
+    const rows = EXCHANGES.flatMap((exchange) => consistent.filter((row) => row.Exchange === exchange).slice(0, RESULT_LIMIT_PER_EXCHANGE))
     await addHourlyTrends(rows)
 
     state.rows = rows

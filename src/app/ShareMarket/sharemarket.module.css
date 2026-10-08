@@ -12,6 +12,7 @@
   min-height: 100vh;
   background: var(--bg);
   color: var(--text);
+  overflow-x: hidden;
   font-family: 'Manrope', system-ui, sans-serif;
   font-size: 12px;
 }
@@ -141,6 +142,7 @@
 .controlRow .controls button { padding: 6px 10px; font-size: 10px; }
 
 .tableWrap { overflow-x: auto; margin-bottom: 20px; }
+.tableWrap { overscroll-behavior-x: contain; scrollbar-width: thin; }
 .table {
   width: 100%;
   table-layout: fixed;
@@ -286,8 +288,8 @@
 .tablet .spark { width: 76px; }
 
 .mobile .table {
-  width: 100%;
-  min-width: 100%;
+  width: max-content;
+  min-width: 720px;
   table-layout: fixed;
 }
 .mobile .table th, .mobile .table td {
