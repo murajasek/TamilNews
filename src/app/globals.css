@@ -702,6 +702,14 @@ button {
     line-height: 1.4;
 }
 
+.reader-image {
+    max-width: 100%;
+    height: auto;
+    margin: 24px 0 24px 0;
+    border-radius: 8px;
+    display: block;
+}
+
 .reader-summary {
     padding-bottom: 22px;
     border-bottom: 1px solid var(--line);

@@ -5,7 +5,7 @@ import useSWR from 'swr'
 import type { NewsStory, SourceStatus } from '@/lib/news'
 
 type NewsResponse = { stories: NewsStory[]; sources: SourceStatus[]; fetchedAt: string }
-type ArticleResponse = { title: string; description: string; briefContent: string; briefParagraphCount?: number; paragraphs: string[]; url: string; source?: string; error?: string }
+type ArticleResponse = { title: string; description: string; briefContent: string; briefParagraphCount?: number; paragraphs: string[]; imageUrl?: string; url: string; source?: string; error?: string }
 const fetcher = async (url: string) => {
   const response = await fetch(url)
   const payload = await response.json() as NewsResponse
@@ -82,7 +82,9 @@ export default function Home() {
         {selectedStory ? <section className="reader">
           <button className="back-button" onClick={() => setSelectedStory(null)}>← செய்திகளுக்குத் திரும்பு</button>
           <div className="reader-kicker">{selectedStory.category} · {article?.source || selectedStory.source}</div>
-          <h5>{article?.title || selectedStory.title}</h5>{articleLoading ? <div className="empty">செய்தியின் கூடுதல் தகவல்களை ஏற்றுகிறது...
+          <h5>{article?.title || selectedStory.title}</h5>
+          {article?.imageUrl && <img className="reader-image" src={article.imageUrl} alt={article?.title || selectedStory.title} onError={(e) => { e.currentTarget.style.display = 'none' }} />}
+          {articleLoading ? <div className="empty">செய்தியின் கூடுதல் தகவல்களை ஏற்றுகிறது...
 
           </div> : articleError || article?.error ? 
           <div className="empty">இந்த செய்தியை இப்போது திறக்க முடியவில்லை.</div> : hasArticleParagraphs ? <>

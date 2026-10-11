@@ -15,9 +15,11 @@ const allowedHosts = new Set([
 const decode = (value: string) => value
   .replace(/&amp;/g, '&')
   .replace(/&quot;/g, '"')
+  .replace(/&#x27;/g, "'")
   .replace(/&#39;|&apos;/g, "'")
   .replace(/&lt;/g, '<')
   .replace(/&gt;/g, '>')
+  .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
   .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
   .replace(/##\s*\$\{article\.altText\}/gi, '')
   .replace(/\s+/g, ' ')
@@ -80,11 +82,12 @@ export async function GET(request: Request) {
     const html = await response.text()
     const title = matchMeta(html, 'og:title') || stripMarkup(html.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1] ?? '')
     const description = matchMeta(html, 'og:description') || matchMeta(html, 'description')
+    const imageUrl = matchMeta(html, 'og:image') || matchMeta(html, 'twitter:image')
     const paragraphs = [...new Set([...extractParagraphs(html), ...extractStructuredBody(html)])].slice(0, 40)
     const extractedBrief = paragraphs.slice(0, 2).join(' ')
     const briefContent = limitBrief(extractedBrief || description || 'இந்த செய்தியின் சுருக்கமான உள்ளடக்கம் தற்போது கிடைக்கவில்லை.')
     const briefParagraphCount = extractedBrief ? Math.min(2, paragraphs.length) : 0
-    return NextResponse.json({ title, description, briefContent, briefParagraphCount, paragraphs, url: articleUrl.href, source: articleUrl.hostname })
+    return NextResponse.json({ title, description, briefContent, briefParagraphCount, paragraphs, imageUrl, url: articleUrl.href, source: articleUrl.hostname })
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : 'Article could not be loaded.' }, { status: 502 })
   }

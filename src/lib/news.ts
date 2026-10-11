@@ -29,7 +29,15 @@ const sources: SourceConfig[] = [
 ]
 
 const parser = new XMLParser({ ignoreAttributes: false, attributeNamePrefix: '@_' })
-const decodeHtmlEntities = (str: string): string => str.replace(/&quot;/g, '"').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&#39;/g, "'").replace(/&apos;/g, "'")
+const decodeHtmlEntities = (str: string): string => str
+  .replace(/&quot;/g, '"')
+  .replace(/&amp;/g, '&')
+  .replace(/&lt;/g, '<')
+  .replace(/&gt;/g, '>')
+  .replace(/&#x27;/g, "'")
+  .replace(/&#39;/g, "'")
+  .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+  .replace(/&apos;/g, "'")
 const text = (value: unknown) => typeof value === 'string' ? decodeHtmlEntities(value.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim()) : ''
 const astrologyPattern = /astrolog|horoscope|zodiac|rasi-?pal[an]?|rasipalan|peyarchi|jothid|sani|rahu|ketu|spirtual|spiritual|aanmeegam|ஆன்மீக|ஜோதிட|ஜாதக|ராசி\s*பலன்|நட்சத்திர\s*பலன்|பெயர்ச்சி|சனி|ராகு|கேது/i
 
